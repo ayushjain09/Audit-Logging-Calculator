@@ -1,6 +1,6 @@
 <template>
 	<div class="h-dvh w-full">
-		<div class="sticky top-0 h-16 w-full flex bg-black z-10">
+		<div class="fixed top-0 h-16 w-full flex bg-black z-10">
 			<a
 				href="#/"
 				class="grow basis-0 text-white px-4 py-2 decoration-none grid place-items-center"
@@ -20,7 +20,7 @@
 				Logs
 			</a>
 		</div>
-		<div class="overflow-y-auto py-5 px-8">
+		<div class="overflow-y-auto pt-10 px-8">
 			<component :is="currentView" />
 		</div>
 	</div>

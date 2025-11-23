@@ -1,7 +1,7 @@
 <template>
-	<div class="flex flex-col items-center">
-		<h1 class="text-xl">Logs Page</h1>
-		<pre>{{ logs }}</pre>
+	<div class="flex flex-col p-4 gap-5">
+		<h1 class="text-xl font-black underline underline-offset-4">Logs</h1>
+		<pre class="mt-2">{{ logs }}</pre>
 	</div>
 </template>
 
@@ -14,8 +14,10 @@ const logs = ref([]);
 onMounted(async () => {
 	// Fetch logs from backend
 	try {
-		const response = await axios.get("http://localhost:8000/logs");
-		logs.value = response.data;
+		const response = await axios.get(
+			`${import.meta.env.VITE_API_BASE_URL}/logs`
+		);
+		logs.value = response.data.data;
 	} catch (error) {
 		console.error("Failed to fetch logs:", error);
 	}

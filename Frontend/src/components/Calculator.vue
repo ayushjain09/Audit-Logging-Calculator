@@ -4,18 +4,31 @@
 			<div
 				class="w-full h-28 flex items-center justify-end bg-blue-200 rounded-xl text-black overflow-x-hidden overflow-y-auto text-2xl py-3 px-4"
 			>
-				<p class="">{{ inputStr }}</p>
+				<p>{{ displayString }}</p>
 			</div>
 
-			<div class="grid grid-cols-4 grid-rows-4 gap-x-4 gap-y-4">
-				<button
-					v-for="button in BUTTONS"
-					:key="button.label"
-					class="bg-gray-200 grid place-items-center h-20 w-20 text-2xl font-black text-black rounded-2xl cursor-pointer active:scale-95 transition-all"
-					@click="handleInput(button)"
-				>
-					{{ button.label }}
-				</button>
+			<div class="flex items-stretch gap-4">
+				<div class="grid grid-cols-4 grid-rows-4 gap-x-4 gap-y-4">
+					<button
+						v-for="button in BUTTONS"
+						:key="button.label"
+						class="bg-gray-200 grid place-items-center h-20 w-20 text-2xl font-black text-black rounded-2xl cursor-pointer active:scale-95 transition-all"
+						@click="handleClickInput(button)"
+					>
+						{{ button.label }}
+					</button>
+				</div>
+				<div class="flex flex-col gap-4">
+					<div
+						class="bg-gray-200 grid place-items-center grow w-20 text-2xl font-black text-black rounded-2xl"
+					></div>
+					<button
+						class="bg-gray-200 grid place-items-center h-20 w-20 text-2xl font-black text-black rounded-2xl cursor-pointer active:scale-95 transition-all"
+						@click="displayString = ''"
+					>
+						Clear
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -25,6 +38,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import axios from "axios";
 
+// Buttons with their associated type and audit action
 const BUTTONS = [
 	{
 		label: 7,
@@ -111,6 +125,7 @@ const BUTTONS = [
 	},
 ];
 
+// Keymap for keyboard input
 const KEYMAP = {
 	0: "0",
 	1: "1",
@@ -132,46 +147,68 @@ const KEYMAP = {
 	Backspace: "Backspace",
 };
 
-const inputStr = ref("");
+// String to be displayed, stores the input and evaluated result
+const displayString = ref("");
 
-const handleKeyDown = (event) => {
-	const key = event.key;
+const handleClickInput = async (button) => {
+	logEvent(button);
 
-	if (key === "Backspace") {
-		inputStr.value = inputStr.value.slice(0, -1);
+	if (button.label === "=") {
+		displayString.value = calculate(displayString.value);
 		return;
 	}
 
-	if (key in KEYMAP) {
-		event.preventDefault();
-		const buttonLabel = KEYMAP[key];
-		const button = BUTTONS.find((b) => String(b.label) === buttonLabel);
-		if (button) handleInput(button);
-	}
+	displayString.value += button.label;
 };
 
-const handleInput = async (button) => {
-	inputStr.value += button.label;
+const handleKeyInput = (event) => {
+	event.preventDefault();
+	const key = event.key;
 
-	// Post the event to the backend
+	if (key === "Backspace") {
+		displayString.value = displayString.value.slice(0, -1);
+		return;
+	}
+
+	const buttonLabel = KEYMAP[key];
+	const button = BUTTONS.find((b) => String(b.label) === buttonLabel);
+	if (!button) return;
+
+	logEvent(button);
+
+	if (key === "Enter" || key === "=") {
+		displayString.value = calculate(displayString.value);
+		return;
+	}
+
+	displayString.value += button.label;
+};
+
+// Post the event to be logged to the backend
+const logEvent = async (button) => {
 	try {
-		await axios.post("http://localhost:8000/logs", [
-			{
-				action: button.action,
-				value:
-					button.type === "equals" ? "equals" : String(button.label),
-			},
-		]);
+		await axios.post(`${import.meta.env.VITE_API_BASE_URL}/logs`, {
+			action: button.action,
+			value: button.type === "equals" ? "equals" : String(button.label),
+		});
 	} catch (error) {
 		console.log("Failed to log action: ", error);
 	}
 };
 
+const calculate = (expr) => {
+	try {
+		return Function(`return ${expr}`)();
+	} catch (e) {
+		return "Error";
+	}
+};
+
 onMounted(() => {
-	window.addEventListener("keydown", handleKeyDown);
+	window.addEventListener("keydown", handleKeyInput);
 });
 
 onUnmounted(() => {
-	window.removeEventListener("keydown", handleKeyDown);
+	window.removeEventListener("keydown", handleKeyInput);
 });
 </script>
